@@ -1,22 +1,23 @@
-FROM python:3.12.11-slim
+# H2: pinned by digest
+FROM python:3.12.11-slim@sha256:47ae396f09c1303b8653019811a8498470603d7ffefc29cb07c88f1f8cb3d19f
 
 WORKDIR /app
 
-# Copy application code and tests
 COPY setup.py /app/
 COPY src/ /app/src/
 COPY tests/ /app/tests/
 COPY packages/ /app/packages/
 
-# Install dependencies with testing extras
 RUN pip install --no-cache-dir -e ".[test]"
-
-# Install additional testing dependencies if needed
 RUN pip install --no-cache-dir pytest pytest-cov psutil
 
-# Create data and shares directories for testing
-RUN mkdir -p /data /app/shares && chmod 777 /data /app/shares
+# M1+M2: create non-root user; restrict directory permissions
+RUN adduser --disabled-password --gecos "" testuser \
+    && mkdir -p /data /app/shares \
+    && chown -R testuser:testuser /app /data \
+    && chmod 750 /data /app/shares
 
-# Set entrypoint to run tests from tests directory
+USER testuser
+
 WORKDIR /app/tests
 ENTRYPOINT ["python", "run_tests.py"]

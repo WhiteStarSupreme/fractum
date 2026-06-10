@@ -22,6 +22,20 @@ fi
 echo "Step 2/4: Installing pyenv for exact Python 3.12.11 version"
 PYENV_ROOT="$HOME/.pyenv"
 
+# M3: replaced curl|bash (no hash verification, MITM risk) with a pinned git clone.
+# git clone verifies integrity via content-addressed storage.
+# Pin PYENV_GIT_TAG to a specific release tag; review and update when upgrading.
+PYENV_GIT_TAG="v2.5.3"
+
+_install_pyenv() {
+  echo "→ Cloning pyenv ${PYENV_GIT_TAG} (no curl|bash)..."
+  git clone --depth 1 --branch "${PYENV_GIT_TAG}" \
+      https://github.com/pyenv/pyenv.git "$PYENV_ROOT"
+  # Build the optional C extension for faster shim dispatch
+  cd "$PYENV_ROOT" && src/configure && make -C src 2>/dev/null || true
+  cd - >/dev/null
+}
+
 if [[ -d "$PYENV_ROOT" ]]; then
   if [[ -x "$PYENV_ROOT/bin/pyenv" ]]; then
     echo "→ pyenv already installed"
@@ -31,16 +45,14 @@ if [[ -d "$PYENV_ROOT" ]]; then
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
       rm -rf "$PYENV_ROOT"
-      echo "→ Installing pyenv..."
-      curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+      _install_pyenv
     else
       echo "Please remove $PYENV_ROOT manually and run this script again."
       exit 1
     fi
   fi
 else
-  echo "→ Installing pyenv..."
-  curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash
+  _install_pyenv
 fi
 
 # Add pyenv to PATH for this session

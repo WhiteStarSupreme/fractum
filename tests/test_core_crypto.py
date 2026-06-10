@@ -538,19 +538,16 @@ class TestFileEncryptor(unittest.TestCase):
             self.assertIn(
                 "timestamp", read_metadata, "Timestamp field missing in metadata"
             )
-            self.assertIn("hash", read_metadata, "Hash field missing in metadata")
-            log_success("All standard metadata fields present")
-
-            # Verify hash integrity
-            log_info("Verifying file hash integrity")
-            with open(self.test_file_path, "rb") as f:
-                data = f.read()
-                data_hash = hashlib.sha256(data).hexdigest()
-
-            self.assertEqual(
-                read_metadata["hash"], data_hash, "Data hash in metadata doesn't match"
+            # C1 fix: plaintext hash no longer stored in metadata (GCM provides integrity)
+            self.assertNotIn(
+                "hash", read_metadata,
+                "Plaintext hash must NOT be present in metadata (C1 security fix)"
             )
-            log_success("File hash integrity verified")
+            # format_version should be present in new files
+            self.assertIn(
+                "format_version", read_metadata, "format_version field missing in metadata"
+            )
+            log_success("Standard metadata fields present and no plaintext hash")
         except Exception as e:
             log_warning(f"Metadata integrity test skipped: {str(e)}")
             # Skip this test if it's failing

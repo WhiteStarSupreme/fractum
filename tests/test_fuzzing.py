@@ -693,6 +693,8 @@ class ParameterFuzzingTests(unittest.TestCase):
                                 "hash mismatch",
                                 "tag",
                                 "hash",
+                                "incorrect key or tampered",
+                                "tampered",
                             ]
                             error_message = str(e).lower()
 

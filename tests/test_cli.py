@@ -130,6 +130,55 @@ class TestEncryptCommand(unittest.TestCase):
             )
             self.assertNotEqual(result.exit_code, 0)
 
+    def test_encrypt_minimal_metadata_hashes_label(self):
+        """N10: --minimal-metadata must replace the label with its SHA-256 hash."""
+        import hashlib, zipfile as _zf
+        with self.runner.isolated_filesystem():
+            Path("secret.txt").write_bytes(SECRET_TEXT)
+            result = self.runner.invoke(
+                encrypt,
+                ["secret.txt", "-t", "2", "-n", "3", "-l", "wallet_seed", "-M"],
+            )
+            self.assertEqual(result.exit_code, 0, msg=result.output)
+
+            expected_hash = hashlib.sha256(b"wallet_seed").hexdigest()[:32]
+            for zip_path in Path("shares").glob("share_*.zip"):
+                with _zf.ZipFile(zip_path) as zf:
+                    share_name = next(
+                        n for n in zf.namelist()
+                        if Path(n).name.startswith("share_") and n.endswith(".txt")
+                    )
+                    info = json.loads(zf.read(share_name))
+                    # Label must be hashed, not plaintext
+                    self.assertEqual(
+                        info["label"], expected_hash,
+                        "Label should be SHA-256 hash in minimal-metadata mode"
+                    )
+                    # Identifying fields must be absent
+                    self.assertNotIn(
+                        "tool_integrity", info,
+                        "tool_integrity must be omitted in minimal-metadata mode"
+                    )
+                    self.assertNotIn(
+                        "python_version", info,
+                        "python_version must be omitted in minimal-metadata mode"
+                    )
+
+    def test_encrypt_minimal_metadata_round_trip(self):
+        """N10: files encrypted with --minimal-metadata must still decrypt correctly."""
+        with self.runner.isolated_filesystem():
+            Path("secret.txt").write_bytes(SECRET_TEXT)
+            result = self.runner.invoke(
+                encrypt,
+                ["secret.txt", "-t", "2", "-n", "3", "-l", "mywallet", "-M"],
+            )
+            self.assertEqual(result.exit_code, 0, msg=result.output)
+
+            Path("secret.txt").unlink()
+            result = self.runner.invoke(decrypt, ["secret.txt.enc", "-s", "shares"])
+            self.assertEqual(result.exit_code, 0, msg=result.output)
+            self.assertEqual(Path("secret.txt").read_bytes(), SECRET_TEXT)
+
 
 class TestDecryptCommand(unittest.TestCase):
     """Tests for the decrypt command (full round trips)."""
