@@ -2,14 +2,29 @@
 
 __pycache__/
 *.py[cod]
+*.egg-info/
 
 data/
 shares/
 
+# Outils de dev locaux
+_bmad/
+.claude/
+docs/
+{output_folder}/
+_bmad-output/
+
+# Fichiers de déploiement non nécessaires au runtime
 docker-compose.yml
+Dockerfile
+.dockerignore
+.gitignore
+bootstrap-*.sh
+bootstrap-*.ps1
+diagram.png
+*.md
+!README.md
 
 .venv
 venv
 .env
-
-.gitignore
