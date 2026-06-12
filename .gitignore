@@ -8,7 +8,5 @@ __pycache__
 .venv
 data
 shares/
-
-# BMAD - local AI agent config (not for repo)
-_bmad/
 .claude/
+_bmad/
